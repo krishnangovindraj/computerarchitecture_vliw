@@ -70,97 +70,41 @@ module instructionMem(input clk, input reset, input [31:0] PC, output reg [31:0]
 	
 endmodule
 
-module IF_ID( input clk, input reset, input regWrite, input [31:0] instr2Word, output [15:0] p1_aluInstr, output [15:0] p1_memInstr );
+module pipleline_IF_ID( input clk, input reset, input regWrite, input [31:0] instr2Word, output [15:0] p1_aluInstr, output [15:0] p1_memInstr );
 	register16bit reg_aluInstr(clk, reset, regWrite, instr2Word[15:0], p1_aluInstr);
 	register16bit reg_memInstr(clk, reset, regWrite, instr2Word[31:16], p1_memInstr);
 endmodule
 
-module controlCircuit(
-		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode,
-		output memRead, memWrite, alu_regWrite, mem_regWrite, 
-		output [1:0] aluOp, output aluSrcB, 
-		output isBranch, output isJump,
-		output alu_undefinedInstruction, output mem_undefinedInstruction
+module pipeline_ID_EX( 
+		input clk, input reset, input regWrite, 
+		input [2:0] alu_rn, alu_rm, alu_rd, mem_rn, mem_rd,
+		output [2:0] p2_alu_rn, p2_alu_rm, p2_alu_rd, p2_mem_rn, p2_mem_rd,
+		
+		input [31:0] alu_reg_rm, alu_reg_rn, mem_reg_rn, mem_reg_rd, 
+		output [31:0] p2_alu_reg_rm, p2_alu_reg_rns, p2_mem_reg_rn, p2_mem_reg_rd, 
+		
+		input [31:0] alu_sextImm3, mem_sextImm5, mem_sextImm8,
+		output [31:0] p2_alu_sextImm3, p2_mem_sextImm5, p2_mem_sextImm8
 	);
-	// These 2 can be derived directly from the opcode
-	assign aluOp = p1_aluOpcode[6:5];
-	assign aluSrcB = p1_aluOpcode[6];
 	
-	always@(p1_aluOpcode)
-	begin
-		case(p1_aluOpcode[4:0])
-			case 5'b00011: 
-				begin
-					alu_regWrite = 1;	// addImm, subImm, subReg
-					alu_undefinedInstruction = 0;
-				end
-			case 5'b01000: 
-			begin
-					alu_regWrite = 0;	// addImm, subImm, subReg
-					alu_undefinedInstruction = 0;
-				end
-				
-			default: 
-				begin
-					alu_regWrite = 0;
-					alu_undefinedInstruction = 1;
-				end
-		endcase
-	end
+	register3bit reg_alu_rn( clk, reset, regWrite, 1'b1, alu_rn, p2_alu_rn );
+	register3bit reg_alu_rm( clk, reset, regWrite, 1'b1, alu_rm, p2_alu_rm );
+	register3bit reg_alu_rd( clk, reset, regWrite, 1'b1, alu_rd, p2_alu_rd );
 	
-	always@(p1_memOpcode)
-	begin
-		case(p1_memOpcode[4:0])
-			case 5'b01100:  // storeb
-				begin
-					memRead = 0;
-					memWrite = 1;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
-				end
-			case 5'b01101: //loadb
-				begin
-					memRead = 1;
-					memWrite = 0;
-					mem_regWrite = 1;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
-				end
-				
-			case 5'b11010: //branch
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 1;
-				end
-				
-			case 5'b11110: //jump
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 1;
-					isBranch = 0;
-				end
-			default:
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 1;
-					isJump = 0;
-					isBranch = 0;
-				end
-		endcase
-	end	
+	register3bit reg_mem_rn( clk, reset, regWrite, 1'b1, mem_rn, p2_mem_rn );
+	register3bit reg_mem_rd( clk, reset, regWrite, 1'b1, mem_rd, p2_mem_rd );
 	
+	
+	register32bit reg_alu_reg_rn( clk, reset, regWrite, 1'b1, alu_reg_rn, p2_alu_reg_rn );
+	register32bit reg_alu_reg_rm( clk, reset, regWrite, 1'b1, alu_reg_rm, p2_alu_reg_rm );
+	
+	register32bit reg_mem_reg_rn( clk, reset, regWrite, 1'b1, mem_reg_rn, p2_mem_reg_rn );
+	register32bit reg_mem_reg_rn( clk, reset, regWrite, 1'b1, mem_reg_rd, p2_mem_reg_rd );
+	
+	
+	register32bit reg_alu_sextImm3( clk, reset, regWrite, 1'b1, alu_sextImm3, p2_alu_sextImm3 );
+	register32bit reg_mem_sextImm5( clk, reset, regWrite, 1'b1, mem_sextImm5, p2_mem_sextImm5 );
+	register32bit reg_mem_sextImm8( clk, reset, regWrite, 1'b1, mem_sextImm8, p2_mem_sextImm8 );
 	
 endmodule
 
@@ -170,6 +114,7 @@ module IFIDSTAGE(
 		// From other stages
 		input pcWrite, 		input pc_writeData_sel, 	input [31:0] pc_writeData_bgt, // pc_writeData_jmp, 
 		input mem_regWrite, alu_regWrite, input [31:0] alu_writeData, mem_writeData,
+		input isException, // OR the two
 		// Our output
 		output [31:0] PC_out, alu_reg_rm, alu_reg_rn, mem_reg_rn, mem_reg_rd, 
 		output [31:0] alu_sextImm3, mem_sextImm5, mem_sextImm8, mem_sextImm11,
@@ -187,8 +132,19 @@ module IFIDSTAGE(
 	
 	adder32bit adder_pc( pc_out, 32'd4 , pc_plus4 );
 	
-	wire [31:0] pc_writeData; 
-	mux4to1_32bit mux_pc_writeData( pc_plus4, EXCEPTION_HANDLER_ADDRESS, pc_writeData_jmp, pc_writeData_bgt,  pc_writeData_sel, pc_writeData );
+	wire [1:0] pc_writeSel;
+	wire [31:0] pc_writeData;
+	
+	// Control circuit signals
+	wire memRead, memWrite, alu_regWrite, mem_regWrite;
+	wire aluOp, wire aluSrcB, 
+	wire isBranch, isJump;
+	wire alu_undefinedInstruction, mem_undefinedInstruction;
+	
+	assign pc_writeSel[0] = ( isBranch & flag_N ) | isException;
+	assign pc_writeSel[1] =   isJump | isException;
+	
+	mux4to1_32bit mux_pc_writeData( pc_plus4, pc_writeData_bgt,  pc_writeData_jmp, EXCEPTION_HANDLER_ADDRESS, pc_writeData_sel, pc_writeData );
 	
 	register32bit PC( clk, reset, pcWrite, 1'b1, pc_writeData, pc_out );
 	
@@ -196,10 +152,20 @@ module IFIDSTAGE(
 	wire [31:0] instr2Word;
 	instructionMem instructionMemory(clk, reset, pc_out, instr2Word);
 	
+	
 	wire [15:0] p1_aluInstr, p1_memInstr;
 	IF_ID p1(clk, reset, regWrite, instr2Word, p1_aluInstr, p1_memInstr);
 	
 	// ID Stage
+	
+	controlCircuit ctrlCkt(
+		p1_aluInstr[6:0] , p1_memInstr[4:0],
+		memRead, memWrite, alu_regWrite, mem_regWrite, 
+		aluOp[1:0], aluSrcB, 
+		isBranch,isJump,
+		alu_undefinedInstruction, mem_undefinedInstruction
+	);
+	
 	
 	registerFile rFile( clk, reset, 
 		mem_regWrite, p1_memInstr[10:8], p1_memInstr[7:5], mem_writeData,
