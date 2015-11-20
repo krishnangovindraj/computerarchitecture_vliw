@@ -13,8 +13,6 @@ module instructionMem(input clk, input reset, input [31:0] PC, output reg [31:0]
 endmodule
 
 
-
-
 module IFStage(
 		// From outside world
 		input clk, input reset, input p1_pipeline_regWrite,

@@ -19,6 +19,10 @@ module register3bit( input clk, input reset, input regWrite, input decOut1b, inp
 	D_ff d2(clk, reset, regWrite, decOut1b, writeData[2], outR[2]);
 endmodule
 
+module register1bit( input clk, input reset, input regWrite, input decOut1b, input writeData, output  outR );
+	D_ff d0(clk, reset, regWrite, decOut1b, writeData, outR);
+endmodule
+
 
 module register32bit( input clk, input reset, input regWrite, input decOut1b, input [31:0] writeData, output  [31:0] outR );
 	D_ff d0(clk, reset, regWrite, decOut1b, writeData[0], outR[0]);

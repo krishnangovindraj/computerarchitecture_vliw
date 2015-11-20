@@ -1,94 +1,4 @@
 
-module controlCircuit(
-		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode,
-		output memRead, memWrite, alu_regWrite, mem_regWrite, 
-		output aluOp, output aluSrcB, 
-		output isBranch, output isJump,
-		output alu_undefinedInstruction, output mem_undefinedInstruction
-	);
-	// These 2 can be derived directly from the opcode
-	assign aluOp = p1_aluOpcode[5];
-	assign aluSrcB = p1_aluOpcode[6];
-	
-	always@(p1_aluOpcode)
-	begin
-		case(p1_aluOpcode[4:0])
-			case 5'b00011: 
-				begin
-					alu_regWrite = 1;	// addImm, subImm, subReg
-					alu_undefinedInstruction = 0;
-				end
-			case 5'b01000: 
-			begin
-					alu_regWrite = 0;	// addImm, subImm, subReg
-					alu_undefinedInstruction = 0;
-				end
-				
-			default: 
-				begin
-					alu_regWrite = 0;
-					alu_undefinedInstruction = 1;
-				end
-		endcase
-	end
-	
-	always@(p1_memOpcode)
-	begin
-		case(p1_memOpcode[4:0])
-			case 5'b01100:  // storeb
-				begin
-					memRead = 0;
-					memWrite = 1;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
-				end
-			case 5'b01101: //loadb
-				begin
-					memRead = 1;
-					memWrite = 0;
-					mem_regWrite = 1;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
-				end
-				
-			case 5'b11010: //branch
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 1;
-				end
-				
-			case 5'b11110: //jump
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
-					isJump = 1;
-					isBranch = 0;
-				end
-			default:
-				begin
-					memRead = 0;
-					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 1;
-					isJump = 0;
-					isBranch = 0;
-				end
-		endcase
-	end	
-	
-	
-endmodule
-
-
 module IDStage(
 		input clk, input reset, input p2_pipeline_regWrite,
 		
@@ -103,10 +13,10 @@ module IDStage(
 		
 		
 		// Signals
-		output memRead, memWrite, alu_regWrite, mem_regWrite,
-		output aluOp, aluSrcB,
-		output isBranch, isJump
-		output alu_undefinedInstruction, mem_undefinedInstruction
+		output p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite,
+		output p2_aluOp, p2_aluSrcB,
+		output p2_isBranch, p2_isJump
+		output p2_alu_undefinedInstruction, p2_mem_undefinedInstruction
 	);
 	// ID Stage
 	
@@ -158,7 +68,19 @@ module IDStage(
 		alu_reg_rm, alu_reg_rn, mem_reg_rn, mem_reg_rd, 							// input
 		p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, p2_mem_reg_rd, 				// output
 		
-		alu_sext3_imm, mem_sext5_memOffset, mem_shiftedSext8_branchOffset, 			// input
-		p2_alu_sext3_imm, p2_mem_sext5_memOffset, p2_mem_shiftedSext8_branchOffset	// output
+		alu_sext3_imm, mem_sext5_memOffset, 			// input
+		p2_alu_sext3_imm, p2_mem_sext5_memOffset, 		// output
+		
+		
+		// signals in
+		memRead, memWrite, alu_regWrite, mem_regWrite,
+		aluOp, aluSrcB,
+		isBranch, isJump,
+		alu_undefinedInstruction, mem_undefinedInstruction,
+		// signals out
+		p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite,
+		p2_aluOp, p2_aluSrcB,
+		p2_isBranch, p2_isJump
+		p2_alu_undefinedInstruction, p2_mem_undefinedInstruction
 	);
 endmodule
