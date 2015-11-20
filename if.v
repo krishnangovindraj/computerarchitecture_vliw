@@ -26,6 +26,8 @@ module IFStage(
 	
 	//IF Stage
 	wire [31:0] pc_out;
+	wire [31:0] pc_writeData;
+
 	register32bit PC( clk, reset, pcWrite, 1'b1, pc_writeData, pc_out );
 	
 	// PC increment
@@ -35,7 +37,6 @@ module IFStage(
 	
 	// PC value selector
 	wire [1:0] pc_writeData_sel;
-	wire [31:0] pc_writeData;
 	assign pc_writeData_sel[0] = ( p2_isBranch & p2_alu_flag_N ) | isException;
 	assign pc_writeData_sel[1] =   isJump | isException;
 	

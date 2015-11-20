@@ -3,7 +3,7 @@ module IDStage(
 		input clk, input reset, input p2_pipeline_regWrite,
 		
 		input [15:0] p1_aluInstr, p1_memInstr,
-		input p4_mem_regWrite, p4_alu_regWrite, input [31:0] p4_alu_writeData, p4_mem_writeData
+		input p4_mem_regWrite, p4_alu_regWrite, input [31:0] p4_alu_writeData, p4_mem_writeData,
 	
 		// Our output
 		output [2:0] p2_alu_rm, p2_alu_rn, p2_alu_rd, p2_mem_rn, p2_mem_rd, 
@@ -15,7 +15,7 @@ module IDStage(
 		// Signals
 		output p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite,
 		output p2_aluOp, p2_aluSrcB,
-		output p2_isBranch, p2_isJump
+		output p2_isBranch, p2_isJump,
 		output p2_alu_undefinedInstruction, p2_mem_undefinedInstruction
 	);
 	// ID Stage
@@ -40,7 +40,7 @@ module IDStage(
 	controlCircuit ctrlCkt(
 		p1_aluInstr[6:0] , p1_memInstr[4:0],
 		memRead, memWrite, alu_regWrite, mem_regWrite, 
-		aluOp[1:0], aluSrcB, 
+		aluOp, aluSrcB, 
 		isBranch,isJump,
 		alu_undefinedInstruction, mem_undefinedInstruction
 	);
@@ -80,7 +80,7 @@ module IDStage(
 		// signals out
 		p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite,
 		p2_aluOp, p2_aluSrcB,
-		p2_isBranch, p2_isJump
+		p2_isBranch, p2_isJump,
 		p2_alu_undefinedInstruction, p2_mem_undefinedInstruction
 	);
 endmodule
