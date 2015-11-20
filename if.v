@@ -1,18 +1,3 @@
-module instructionMem(input clk, input reset, input [31:0] PC, output reg [31:0] instr2Word);
-	// DUMMY FOR NOW!
-	always@(negedge clk)
-	begin
-		case(PC[1:0])
-			2'b00: instr2Word = 00000000_00000000__00000000_00000000;
-			2'b01: instr2Word = 00000000_00000000__00000000_00000000;
-			2'b10: instr2Word = 00000000_00000000__00000000_00000000;
-			2'b11: instr2Word = 00000000_00000000__00000000_00000000;
-		endcase
-	end
-	
-endmodule
-
-
 module IFStage(
 		// From outside world
 		input clk, input reset, input p1_pipeline_regWrite,
@@ -45,7 +30,8 @@ module IFStage(
 	
 	// Instruction memory
 	wire [31:0] instr2Word;
-	instructionMem instructionMemory(clk, reset, pc_out, instr2Word);
+	wire instrMem_hit;
+	instructionMem instructionMemory(clk, reset, pc_out, instrMem_hit, instr2Word);
 	
 	// P1
 	pipleline_IF_ID p1(clk, reset, p1_pipeline_regWrite, instr2Word, p1_aluInstr, p1_memInstr);

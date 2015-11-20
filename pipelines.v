@@ -79,3 +79,23 @@ module pipeline_EX_MEM(
 	
 	
 endmodule
+
+module pipeline_MEM_WB(
+		input clk, reset,
+		
+		input [2:0]  alu_rd, mem_rd,
+		input [31:0] alu_aluOut, 
+		input [31:0] mem_out
+		
+		output [2:0] p4_alu_rd, p4_mem_rd,
+		output [31:0] p4_alu_aluOut, 
+		output [31:0] p4_mem_out
+);
+	
+	register3bit reg_alu_rd( clk, reset, regWrite, 1'b1, alu_rd, p4_alu_rd );
+	register3bit reg_mem_rd( clk, reset, regWrite, 1'b1, mem_rd, p4_mem_rd );
+	
+	register32bit reg_alu_rd( clk, reset, regWrite, 1'b1, alu_aluOut, p4_alu_aluOut );
+	register32bit reg_mem_rd( clk, reset, regWrite, 1'b1, mem_out, p4_mem_out );
+	
+endmodule
