@@ -4,3 +4,4 @@
 *.wlf
 transcript
 work/**/*
+dump/**/*
