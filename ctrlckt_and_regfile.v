@@ -2,10 +2,10 @@
 
 module controlCircuit(
 		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode,
-		output memRead, memWrite, alu_regWrite, mem_regWrite, 
-		output aluOp, output aluSrcB, 
-		output isBranch, output isJump,
-		output alu_undefinedInstruction, output mem_undefinedInstruction
+		output reg memRead, memWrite, alu_regWrite, mem_regWrite, 
+		output aluOp, aluSrcB, 
+		output reg isBranch, isJump,
+		output reg alu_undefinedInstruction, mem_undefinedInstruction
 	);
 	// These 2 can be derived directly from the opcode
 	assign aluOp = p1_aluOpcode[5];
@@ -14,12 +14,12 @@ module controlCircuit(
 	always@(p1_aluOpcode)
 	begin
 		case(p1_aluOpcode[4:0])
-			case 5'b00011: 
+			5'b00011: 
 				begin
 					alu_regWrite = 1;	// addImm, subImm, subReg
 					alu_undefinedInstruction = 0;
 				end
-			case 5'b01000: 
+			5'b01000: 
 			begin
 					alu_regWrite = 0;	// addImm, subImm, subReg
 					alu_undefinedInstruction = 0;
@@ -36,7 +36,7 @@ module controlCircuit(
 	always@(p1_memOpcode)
 	begin
 		case(p1_memOpcode[4:0])
-			case 5'b01100:  // storeb
+			5'b01100:  // storeb
 				begin
 					memRead = 0;
 					memWrite = 1;
@@ -45,7 +45,7 @@ module controlCircuit(
 					isJump = 0;
 					isBranch = 0;
 				end
-			case 5'b01101: //loadb
+			5'b01101: //loadb
 				begin
 					memRead = 1;
 					memWrite = 0;
@@ -55,7 +55,7 @@ module controlCircuit(
 					isBranch = 0;
 				end
 				
-			case 5'b11010: //branch
+			5'b11010: //branch
 				begin
 					memRead = 0;
 					memWrite = 0;
@@ -65,7 +65,7 @@ module controlCircuit(
 					isBranch = 1;
 				end
 				
-			case 5'b11110: //jump
+			5'b11110: //jump
 				begin
 					memRead = 0;
 					memWrite = 0;
@@ -89,8 +89,7 @@ module controlCircuit(
 	
 endmodule
 
-
-
+// RegisterFile design
 
 module registerSet( 
 		input clk, input reset,

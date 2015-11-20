@@ -19,7 +19,7 @@ module EXStage(input clk, input reset,
 		
 		output [2:0] p3_alu_rd, p3_mem_rd,
 		output [7:0] p3_mem_reg_rd, 
-		output [31:0] p3_alu_aluOut, p3_mem_address,
+		output [31:0] p3_alu_aluOut, p3_mem_address
 );
 	// MEM line
 	wire [31:0] selected_mem_reg_rn;
