@@ -87,12 +87,13 @@ module signExt11to32( input [10:0] offset, output reg [31:0] signExtOffset);
   end
 endmodule
 
-module zeroExt11to32( input [7:0] offset, output reg [31:0] zeroExtOffset);
+module zeroExt8to32( input [7:0] offset, output reg [31:0] zeroExtOffset);
   always@(offset)
   begin
-    zeroExtOffset = { 16'b0000000000000000, offset};
+    zeroExtOffset = { 24'b000000000000000000000000, offset};
   end
 endmodule
+
 
 
 module decoder3to8( input [2:0] encoded, output reg [7:0] decOut);
@@ -109,10 +110,5 @@ module decoder3to8( input [2:0] encoded, output reg [7:0] decOut);
 			3'b111: decOut=8'b10000000;
 		endcase
 	end
-endmodule
-
-module adder32bit(input [31:0] op1, input [31:0] op2, output reg [31:0] res);
-	always@(op1 or op2)
-		res = op1 + op2;
 endmodule
 
