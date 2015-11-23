@@ -1,57 +1,62 @@
-module forwarding_unit(input p3_alu_regWrite, input p4_alu_regWrite, input p4_mem_regWrite,input p2_alu_regWrite,input [4:0] p1_aluOpcode,input [4:0] p1_memOpcode,
-		input [4:0] p2_aluOpcode,input [4:0] p2_memOpcode,input [2:0] p4_opcodeM_rd /* I[7:5] */ , input [2:0] p4_opcodeA_rd /* I[25:23] */, 
-		input [2:0] p3_opcodeA_rd /* I[25:23] */, input [2:0] p2_opcodeM_rd /* I[7:5] */ ,input [2:0] p2_opcodeA_rm /* I[31:29] */ ,
-		input [2:0] p2_opcodeA_rn /* I[28:26] */ ,input [2:0] p2_opcodeM_rn /* I[10:8] */ ,
-		output reg [1:0] fA , output reg [1:0] fB, output reg [1:0] fC, output reg fD, output reg fE); // ,output reg [1:0] N_flag_mux); // Deprecated
+module forwarding_unit(
+		input p3_alu_regWrite, input p4_alu_regWrite, input p4_mem_regWrite,input p2_alu_regWrite,
+		// input [4:0] p1_aluOpcode,input [4:0] p1_memOpcode,  input [4:0] p2_aluOpcode,input [4:0] p2_memOpcode, // Not needed
+		input [2:0] p4_mem_rd, input [2:0] p4_alu_rd, 
+		input [2:0] p3_alu_rd,
+		input [2:0] p2_mem_rd,input [2:0] p2_alu_rm ,
+		input [2:0] p2_alu_rn,input [2:0] p2_mem_rn,
 		
-		always @ ( p4_opcodeM_rd or p4_opcodeA_rd or p3_opcodeA_rd or p2_opcodeM_rd or p2_opcodeA_rm or p2_opcodeA_rn or p2_opcodeM_rn)
+		output reg [1:0] f_alu_reg_rn_sel , output reg [1:0] f_alu_reg_rm_sel, output reg [1:0] f_mem_reg_rn_sel, output reg f_mem_reg_rd_sel, output reg f_memStage_mem_rd_sel // ,output reg [1:0] N_flag_mux); // Deprecated
+	); 
+		
+		always @ ( p4_mem_rd or p4_alu_rd or p3_alu_rd or p2_mem_rd or p2_alu_rm or p2_alu_rn or p2_mem_rn)
 		
 		begin
 
 		// when no dependencies all are from id/ex
-		fA = 0 ; fB = 0 ; fC = 0 ; fD = 0; fE = 0; 
+		f_alu_reg_rn_sel = 0 ; f_alu_reg_rm_sel = 0 ; f_mem_reg_rn_sel = 0 ; f_mem_reg_rd_sel = 0; f_memStage_mem_rd_sel = 0; 
 					
-		// fA = alu_rn
-		if( p3_alu_regWrite == 1 && p3_opcodeA_rd != 0 && p3_opcodeA_rd == p2_opcodeA_rn )	// (add,X) < (add,X)
-			fA = 1;
-		else if( p4_mem_regWrite == 1 && p4_opcodeM_rd != 0 && p4_opcodeM_rd == p2_opcodeA_rn )	// (add,X) < (X,X) < (X,lw) // We give mem precedence
-			fA = 3;
-		else if( p4_alu_regWrite == 1 && p4_opcodeA_rd != 0 && p4_opcodeA_rd == p2_opcodeA_rn )	// (add,X) < (X,X) < (add,X)
-			fA = 2;
+		// f_alu_reg_rn_sel = alu_rn
+		if( p3_alu_regWrite == 1 && p3_alu_rd != 0 && p3_alu_rd == p2_alu_rn )	// (add,X) < (add,X)
+			f_alu_reg_rn_sel = 1;
+		else if( p4_mem_regWrite == 1 && p4_mem_rd != 0 && p4_mem_rd == p2_alu_rn )	// (add,X) < (X,X) < (X,lw) // We give mem precedence
+			f_alu_reg_rn_sel = 3;
+		else if( p4_alu_regWrite == 1 && p4_alu_rd != 0 && p4_alu_rd == p2_alu_rn )	// (add,X) < (X,X) < (add,X)
+			f_alu_reg_rn_sel = 2;
 		
 		
-		// fB = alu_rm
-		if( p3_alu_regWrite == 1 &&  p3_opcodeA_rd != 0 && p3_opcodeA_rd == p2_opcodeA_rm )	// (add,X) < (add,X)	// Would this mess up with immediate? No, Because we have a mux after this
-			fB = 1;
-		else if( p4_mem_regWrite == 1 && p4_opcodeM_rd != 0 && p4_opcodeM_rd == p2_opcodeA_rm )	// (X,lw) < (X,X) < (add,X) // We give mem precedence
-			fB = 3;
-		else if( p4_alu_regWrite == 1 && p4_opcodeA_rd != 0 && p4_opcodeA_rd == p2_opcodeA_rm )	// (add,X) < (X,X) < (add,X)
-			fB = 2;
+		// f_alu_reg_rm_sel = alu_rm
+		if( p3_alu_regWrite == 1 &&  p3_alu_rd != 0 && p3_alu_rd == p2_alu_rm )	// (add,X) < (add,X)	// Would this mess up with immediate? No, Because we have a mux after this
+			f_alu_reg_rm_sel = 1;
+		else if( p4_mem_regWrite == 1 && p4_mem_rd != 0 && p4_mem_rd == p2_alu_rm )	// (X,lw) < (X,X) < (add,X) // We give mem precedence
+			f_alu_reg_rm_sel = 3;
+		else if( p4_alu_regWrite == 1 && p4_alu_rd != 0 && p4_alu_rd == p2_alu_rm )	// (add,X) < (X,X) < (add,X)
+			f_alu_reg_rm_sel = 2;
 		
-		//fC = mem_rn
-		if( p3_alu_regWrite == 1 &&  p3_opcodeA_rd != 0 && p3_opcodeA_rd == p2_opcodeM_rn )		// (add,X) < (X,lw)	// Would this mess up with immediate? No, Because we have a mux after this
-			fC = 1;
-		else if( p4_mem_regWrite == 1 && p4_opcodeM_rd != 0 && p4_opcodeM_rd == p2_opcodeM_rn )	// (X,lw) < (X,X) < (X,lw) // We give mem precedence
-			fC = 3;
-		else if( p4_alu_regWrite == 1 && p4_opcodeA_rd != 0 && p4_opcodeA_rd == p2_opcodeM_rn )	// (add,X) < (X,X) < (X,lw)
-			fC = 2;
+		//f_mem_reg_rn_sel = mem_rn
+		if( p3_alu_regWrite == 1 &&  p3_alu_rd != 0 && p3_alu_rd == p2_mem_rn )		// (add,X) < (X,lw)	// Would this mess up with immediate? No, Because we have a mux after this
+			f_mem_reg_rn_sel = 1;
+		else if( p4_mem_regWrite == 1 && p4_mem_rd != 0 && p4_mem_rd == p2_mem_rn )	// (X,lw) < (X,X) < (X,lw) // We give mem precedence
+			f_mem_reg_rn_sel = 3;
+		else if( p4_alu_regWrite == 1 && p4_alu_rd != 0 && p4_alu_rd == p2_mem_rn )	// (add,X) < (X,X) < (X,lw)
+			f_mem_reg_rn_sel = 2;
 			
 		
-		//fD = EX_mem_rd
-		if( p3_alu_regWrite == 1 &&  p3_opcodeA_rd != 0 && p3_opcodeA_rd == p2_opcodeM_rd )		// (add,X) < (X,sw)	// Would this mess up with immediate? No, Because we have a mux after this
-			fD = 1;
-		else if( p4_mem_regWrite == 1 && p4_opcodeM_rd != 0 && p4_opcodeM_rd == p2_opcodeM_rd )	// (X,lw) < (X,X) < (X,sw) // We give mem precedence
-			fD = 3;
-		else if( p4_alu_regWrite == 1 && p4_opcodeA_rd != 0 && p4_opcodeA_rd == p2_opcodeM_rd )	// (add,X) < (X,X) < (X,sw)
-			fD = 2;
+		//f_mem_reg_rd_sel = EX_mem_rd
+		if( p3_alu_regWrite == 1 &&  p3_alu_rd != 0 && p3_alu_rd == p2_mem_rd )		// (add,X) < (X,sw)	// Would this mess up with immediate? No, Because we have a mux after this
+			f_mem_reg_rd_sel = 1;
+		else if( p4_mem_regWrite == 1 && p4_mem_rd != 0 && p4_mem_rd == p2_mem_rd )	// (X,lw) < (X,X) < (X,sw) // We give mem precedence
+			f_mem_reg_rd_sel = 3;
+		else if( p4_alu_regWrite == 1 && p4_alu_rd != 0 && p4_alu_rd == p2_mem_rd )	// (add,X) < (X,X) < (X,sw)
+			f_mem_reg_rd_sel = 2;
 		
 		
 		
-		// fE = MEM_mem_rd
+		// f_memStage_mem_rd_sel = MEM_mem_rd
 		
-		// (add,X), (X, sw) ( A_WB to M_MEM ) dependency already done in fD
-		if( p4_mem_regWrite == 1 && p4_opcodeM_rd != 0 && p4_opcodeM_rd == p2_opcodeM_rd ) // ( X, lw ) < ( X, sw ) 
-			fE = 1;
+		// (add,X), (X, sw) ( A_WB to M_MEM ) dependency already done in f_mem_reg_rd_sel
+		if( p4_mem_regWrite == 1 && p4_mem_rd != 0 && p4_mem_rd == p2_mem_rd ) // ( X, lw ) < ( X, sw ) 
+			f_memStage_mem_rd_sel = 1;
 		
 		
 	end

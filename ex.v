@@ -1,6 +1,6 @@
 module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flush,
 
-		input p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, 
+		input p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, p2_flag_regWrite,
 		input p2_aluOp, p2_aluSrcB, 
 		// input p2_isBranch, p2_isJump, // Not needed
 		
@@ -17,7 +17,7 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 		input [31:0] f_alu_reg_rn_1, f_alu_reg_rn_2, f_alu_reg_rn_3, 	// forwarding for alu_rn
 		
 		
-		
+		output p3_memRead, p3_memWrite, p3_alu_regWrite, p3_mem_regWrite,
 		output [2:0] p3_alu_rd, p3_mem_rd,
 		output [7:0] p3_mem_reg_rd,
 		output [31:0] p3_alu_aluOut, p3_mem_address,
@@ -51,11 +51,14 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 	
 	pipeline_EX_MEM p3( 
 		clk, rest, p3_pipeline_regWrite, EX_flush,
+		
+		p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, p2_flag_regWrite,
 		alu_rd, mem_rd,
 		mem_reg_rd, 
 		aluOut, mem_address,
 		alu_flag_z, alu_flag_n, alu_flag_c, alu_flag_v,
 		
+		p3_memRead, p3_memWrite, p3_alu_regWrite, p3_mem_regWrite,
 		p3_alu_rd, p3_mem_rd,
 		p3_mem_reg_rd, 
 		p3_alu_aluOut, p3_mem_address,
