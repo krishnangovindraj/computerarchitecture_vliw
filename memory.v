@@ -2,7 +2,7 @@
 	This file currently contains mockups for the memories. 
 	
 */
-module instructionMem(input clk, input reset, input [31:0] PC, output hit, output reg [31:0] instr2Word);
+module instructionMem(input clk, input reset, input [31:0] PC, input [31:0] writeData, output hit, output reg [31:0] instr2Word);
 	// DUMMY FOR NOW!
 	always@(negedge clk)
 	begin
@@ -33,12 +33,20 @@ module instructionMem(input clk, input reset, input [31:0] PC, output hit, outpu
 endmodule
 
 
-module dataMem(input clk, input reset, input [31:0] memAddress, output hit, output reg [7:0] memOut);
+module dataMem(input clk, input reset, input [31:0] memAddress, input [7:0] writeData, output hit, output reg [7:0] memOut);
 	// DUMMY FOR NOW!
-	always@(negedge clk)
-	begin
-		hit = 1'b1;
-		memOut = memAddress[7:0];	
-	end
+	
+	assign hit = 1'b1;
+	wire [7:0] decOut;
+	wire [7:0] outR1, outR2, outR3, outR4, outR5, outR6, outR7;
+	decoder3to8( memAddress[2:0], decOut);
+	register8bit dm0( clk, reset, regWrite, decOut[0], writeData, outR0 );
+	register8bit dm1( clk, reset, regWrite, decOut[1], writeData, outR1 );
+	register8bit dm2( clk, reset, regWrite, decOut[2], writeData, outR2 );
+	register8bit dm3( clk, reset, regWrite, decOut[3], writeData, outR3 );
+	register8bit dm4( clk, reset, regWrite, decOut[4], writeData, outR4 );
+	register8bit dm5( clk, reset, regWrite, decOut[5], writeData, outR5 );
+	register8bit dm6( clk, reset, regWrite, decOut[6], writeData, outR6 );
+	register8bit dm7( clk, reset, regWrite, decOut[7], writeData, outR7 );
 endmodule
 

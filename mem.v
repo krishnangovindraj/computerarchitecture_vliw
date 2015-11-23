@@ -22,7 +22,7 @@ module MEMStage(
 
 	wire [7:0] mem_memOut;
 	wire [31:0] mem_memOut_zeroExt;
-	dataMem( clk, reset, p3_mem_address, selected_mem_rd, hit, mem_memOut );
+	dataMem dataMemory( clk, reset, p3_mem_address, selected_mem_rd, hit, mem_memOut );
 	zeroExt8to32( mem_memOut, mem_memOut_zeroExt );
 	
 	pipeline_MEM_WB p4( 

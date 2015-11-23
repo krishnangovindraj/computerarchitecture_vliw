@@ -27,7 +27,7 @@ module IFStage(
 	// Instruction memory
 	wire [31:0] instr2Word;
 	wire instrMem_hit;
-	instructionMem instructionMemory(clk, reset, pc_out, instrMem_hit, instr2Word);
+	instructionMem instructionMemory(clk, reset, pc_out, 32'b0, instrMem_hit, instr2Word);
 	
 	// P1
 	pipleline_IF_ID p1(
