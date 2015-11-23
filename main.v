@@ -27,6 +27,7 @@ module mainModule(input clk, input reset);
 	// Control signals
 	wire memRead, memWrite, alu_regWrite, mem_regWrite, p1_pipeline_regWrite, pcWrite;
 	wire p2_pipeline_regWrite,  p2_alu_flag_N;
+	wire p3_pipeline_regWrite;
 	wire p4_mem_regWrite, p4_alu_regWrite, p4_mem_writeData;
 	wire p2_aluOp, p2_aluSrcB;
 	wire p2_isBranch, p2_isJump, isException;
@@ -45,7 +46,7 @@ module mainModule(input clk, input reset);
 	
 	IFStage ifstage(
 		// From outside world
-		clk, reset, p1_pipeline_regWrite,
+		clk, reset, p1_pipeline_regWrite, IF_flush, 
 		// From other stages
 		pcWrite, branchTarget,jumpTarget, 
 		isBranch, p2_alu_flag_N, isJump, isException, // OR the two
@@ -53,7 +54,7 @@ module mainModule(input clk, input reset);
 	);
 
 	IDStage idstage(
-		clk, reset, p2_pipeline_regWrite,
+		clk, reset, p2_pipeline_regWrite, ID_flush,
 		
 		p1_aluInstr, p1_memInstr,
 		p4_mem_regWrite, p4_alu_regWrite, p4_alu_writeData, p4_mem_writeData,
@@ -71,8 +72,9 @@ module mainModule(input clk, input reset);
 		p2_isBranch, p2_isJump,
 		p2_alu_undefinedInstruction, p2_mem_undefinedInstruction
 	);
-	EXStage exstage(clk, reset, 
-
+	
+	EXStage exstage(
+		clk, reset, p3_pipeline_regWrite, EX_flush,
 		p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, 
 		p2_aluOp, p2_aluSrcB, 
 		p2_isBranch, p2_isJump,
@@ -93,7 +95,7 @@ module mainModule(input clk, input reset);
 		p3_alu_aluOut, p3_mem_address
 	);
 	MEMStage memstage( 
-		clk, reset,
+		clk, reset, p4_pipeline_regWrite,
 		
 		p3_alu_rd, p3_mem_rd,
 		p3_mem_reg_rd, 

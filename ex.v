@@ -1,4 +1,4 @@
-module EXStage(input clk, input reset, 
+module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flush,
 
 		input p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, 
 		input p2_aluOp, p2_aluSrcB, 
@@ -48,7 +48,7 @@ module EXStage(input clk, input reset,
 	);
 	
 	pipeline_EX_MEM p3( 
-		clk, rest,
+		clk, rest, p3_pipeline_regWrite, EX_flush,
 		alu_rd, mem_rd,
 		mem_reg_rd, 
 		aluOut, mem_address,

@@ -1,40 +1,70 @@
-`define EXCEPTION_HANDLER_ADDRESS 32'b00000000_11111111_00000000_11111111
 
 module controlCircuit(
-		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode,
-		output reg memRead, memWrite, alu_regWrite, mem_regWrite, 
-		output aluOp, aluSrcB, 
-		output reg isBranch, isJump,
-		output reg alu_undefinedInstruction, mem_undefinedInstruction
+		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode, input p3_overflow_flag,input p3_flag_n, input p2_isBranch,
+		output reg memRead, output reg memWrite, output reg alu_regWrite,output reg mem_regWrite, output reg flag_regWrite,
+		output reg aluOp, output reg aluSrcB, 
+		output reg isBranch, output reg isJump,output reg [1:0] pcSrc,
+		output reg IF_flush, output reg ID_flush, output reg EX_flush
 	);
 	// These 2 can be derived directly from the opcode
-	assign aluOp = p1_aluOpcode[5];
-	assign aluSrcB = p1_aluOpcode[6];
-	
-	always@(p1_aluOpcode)
+	//assign aluOp = p1_aluOpcode[5];
+	//assign aluSrcB = p1_aluOpcode[6];
+	reg alu_undefinedInstruction, mem_undefinedInstruction;
+	always @ (p1_aluOpcode or p3_overflow_flag or p1_memOpcode or p3_flag_n)
 	begin
+		aluOp = p1_aluOpcode[5];
+		aluSrcB = p1_aluOpcode[6];
+		IF_flush=0; ID_flush=0; EX_flush=0; isBranch = 0; isJump = 0;
+		
+		if(p1_memOpcode == 5'b11010) //branch
+			begin
+			if(p3_flag_n == 1)
+			pcSrc = 1;
+			else pcSrc = 0;
+			end
+		else if (p1_memOpcode == 5'b11110) //jump
+			pcSrc = 2;
+		else 
+			pcSrc = 0;
+		
+		
+		
 		case(p1_aluOpcode[4:0])
 			5'b00011: 
 				begin
 					alu_regWrite = 1;	// addImm, subImm, subReg
+					flag_regWrite = 1;
+					
 					alu_undefinedInstruction = 0;
 				end
 			5'b01000: 
-			begin
-					alu_regWrite = 0;	// addImm, subImm, subReg
+				begin
+					alu_regWrite = 0;	// cmp
+					flag_regWrite = 1;
+					
 					alu_undefinedInstruction = 0;
 				end
-				
+			5'b00000:
+				begin
+					alu_regWrite = 0;
+					flag_regWrite = 0;
+					
+					alu_undefinedInstruction = 0;
+				end
+		
 			default: 
 				begin
 					alu_regWrite = 0;
+					flag_regWrite = 0;
+					
 					alu_undefinedInstruction = 1;
+					IF_flush=1; ID_flush=1; EX_flush=1;
 				end
 		endcase
-	end
 	
-	always@(p1_memOpcode)
-	begin
+	
+	//always@(p1_memOpcode)
+	
 		case(p1_memOpcode[4:0])
 			5'b01100:  // storeb
 				begin
@@ -42,8 +72,6 @@ module controlCircuit(
 					memWrite = 1;
 					mem_regWrite = 0;
 					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
 				end
 			5'b01101: //loadb
 				begin
@@ -51,8 +79,6 @@ module controlCircuit(
 					memWrite = 0;
 					mem_regWrite = 1;
 					mem_undefinedInstruction = 0;
-					isJump = 0;
-					isBranch = 0;
 				end
 				
 			5'b11010: //branch
@@ -61,8 +87,8 @@ module controlCircuit(
 					memWrite = 0;
 					mem_regWrite = 0;
 					mem_undefinedInstruction = 0;
-					isJump = 0;
 					isBranch = 1;
+					
 				end
 				
 			5'b11110: //jump
@@ -72,22 +98,61 @@ module controlCircuit(
 					mem_regWrite = 0;
 					mem_undefinedInstruction = 0;
 					isJump = 1;
-					isBranch = 0;
+					
 				end
+			
+			5'b00000: // NoOp / IF Flush
+				begin
+					memRead = 0;
+					memWrite = 0;
+					mem_regWrite = 0;
+					mem_undefinedInstruction = 0;
+				end
+			
 			default:
 				begin
 					memRead = 0;
 					memWrite = 0;
 					mem_regWrite = 0;
 					mem_undefinedInstruction = 1;
-					isJump = 0;
-					isBranch = 0;
+					IF_flush=1; ID_flush=1; EX_flush=1;
 				end
 		endcase
-	end	
+		
+		/* PCSrc controls - Branch, Jump and exceptions*/
+		
+		if(p3_overflow_flag == 1) // Takes precedence since it's a cycle ahead
+		begin
+			pcSrc = 3;
+			IF_flush=1; ID_flush=1; EX_flush=1;
+		end
+		else if( p2_isBranch && p3_flag_n )
+			begin 
+				pcSrc = 1;
+				ID_flush=1;
+				IF_flush=1;
+			end
+		else if( mem_undefinedInstruction || alu_undefinedInstruction )
+			begin
+				pcSrc = 3;
+				IF_flush = 1;
+			end
+		else if( isJump )	// Least precedence. Even lower than undefinedInstructions
+			begin
+				pcSrc = 2;
+				IF_flush=1;
+			end
+		else
+			begin
+				pcSrc = 0;
+			end
+	end
+	
 	
 	
 endmodule
+
+
 
 // RegisterFile design
 

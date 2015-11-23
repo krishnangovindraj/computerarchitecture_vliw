@@ -1,6 +1,8 @@
+`define EXCEPTION_HANDLER_ADDRESS 32'b00000000_11111111_00000000_11111111
+
 module IFStage(
 		// From outside world
-		input clk, input reset, input p1_pipeline_regWrite,
+		input clk, input reset, input p1_pipeline_regWrite, input IF_flush,
 		// From other stages
 		input pcWrite, 	input [31:0] pc_branchTarget, pc_jumpTarget, 
 		input p2_isBranch, p2_alu_flag_N, isJump, isException, // OR the two
@@ -34,6 +36,6 @@ module IFStage(
 	instructionMem instructionMemory(clk, reset, pc_out, instrMem_hit, instr2Word);
 	
 	// P1
-	pipleline_IF_ID p1(clk, reset, p1_pipeline_regWrite, instr2Word, p1_aluInstr, p1_memInstr);
+	pipleline_IF_ID p1(clk, reset, IF_flush, p1_pipeline_regWrite, instr2Word, p1_aluInstr, p1_memInstr);
 	
 endmodule
