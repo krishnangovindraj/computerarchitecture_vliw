@@ -19,6 +19,19 @@ module register3bit( input clk, input reset, input regWrite, input decOut1b, inp
 	D_ff d2(clk, reset, regWrite, decOut1b, writeData[2], outR[2]);
 endmodule
 
+module flagRegister4bit( 
+	input clk, input reset, input regWrite, 
+	input p4_flag_z, p4_flag_n, p4_flag_c, p4_flag_v,
+	output flag_z, flag_n, flag_c, flag_v
+);
+	register1bit reg_flag_z( clk, reset, regWrite, 1'b1, p4_flag_z, flag_z);
+	register1bit reg_flag_n( clk, reset, regWrite, 1'b1, p4_flag_n, flag_n);
+	register1bit reg_flag_c( clk, reset, regWrite, 1'b1, p4_flag_c, flag_c);
+	register1bit reg_flag_v( clk, reset, regWrite, 1'b1, p4_flag_v, flag_v);
+endmodule
+
+
+
 module register1bit( input clk, input reset, input regWrite, input decOut1b, input writeData, output  outR );
 	D_ff d0(clk, reset, regWrite, decOut1b, writeData, outR);
 endmodule

@@ -8,9 +8,13 @@ module MEMStage(
 		input f_mem_address_sel,
 		input [31:0] f_mem_address,
 		
+		input p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v,
+		
 		output [2:0] p4_alu_rd, p4_mem_rd,
 		output [31:0] p4_alu_aluOut, 
-		output [31:0] p4_mem_out
+		output [31:0] p4_mem_out,
+		output p4_flag_z, p4_flag_n, p4_flag_c, p4_flag_v
+		
 );
 	
 	wire [31:0] selected_mem_address;
@@ -24,12 +28,12 @@ module MEMStage(
 	pipeline_MEM_WB p4( 
 		clk, reset,
 		p3_alu_rd, p3_mem_rd,
-		p3_alu_aluOut, 
-		mem_out,
+		p3_alu_aluOut, mem_out,
+		p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v,
 		
 		p4_alu_rd, p4_mem_rd,
-		p4_alu_aluOut, 
-		p4_mem_out
+		p4_alu_aluOut, p4_mem_out,
+		p4_flag_z, p4_flag_n, p4_flag_c, p4_flag_v
 	);
 	
 endmodule

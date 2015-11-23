@@ -1,6 +1,7 @@
-
 module controlCircuit(
-		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode, input p3_overflow_flag,input p3_flag_n, input p2_isBranch,
+		input [6:0] p1_aluOpcode, input [4:0] p1_memOpcode, 
+		input p3_flag_v, input p3_flag_n, input p2_isBranch,
+		
 		output reg memRead, output reg memWrite, output reg alu_regWrite,output reg mem_regWrite, output reg flag_regWrite,
 		output reg aluOp, output reg aluSrcB, 
 		output reg isBranch, output reg isJump,output reg [1:0] pcSrc,
@@ -9,24 +10,12 @@ module controlCircuit(
 	// These 2 can be derived directly from the opcode
 	//assign aluOp = p1_aluOpcode[5];
 	//assign aluSrcB = p1_aluOpcode[6];
-	reg alu_undefinedInstruction, mem_undefinedInstruction;
-	always @ (p1_aluOpcode or p3_overflow_flag or p1_memOpcode or p3_flag_n)
+	integer undefined_instruction = 0;
+	always @ (p1_aluOpcode or p3_flag_v or p1_memOpcode or p3_flag_n)
 	begin
 		aluOp = p1_aluOpcode[5];
 		aluSrcB = p1_aluOpcode[6];
 		IF_flush=0; ID_flush=0; EX_flush=0; isBranch = 0; isJump = 0;
-		
-		if(p1_memOpcode == 5'b11010) //branch
-			begin
-			if(p3_flag_n == 1)
-			pcSrc = 1;
-			else pcSrc = 0;
-			end
-		else if (p1_memOpcode == 5'b11110) //jump
-			pcSrc = 2;
-		else 
-			pcSrc = 0;
-		
 		
 		
 		case(p1_aluOpcode[4:0])
@@ -34,31 +23,37 @@ module controlCircuit(
 				begin
 					alu_regWrite = 1;	// addImm, subImm, subReg
 					flag_regWrite = 1;
+					//memRead = 0;
+					//memWrite = 0;
+					//pcSrc = 0;
+					//IF_flush=0; ID_flush=0; EX_flush=0;
 					
-					alu_undefinedInstruction = 0;
 				end
 			5'b01000: 
 				begin
 					alu_regWrite = 0;	// cmp
 					flag_regWrite = 1;
+					//memRead = 0;
+					//memWrite = 0;
+					//pcSrc = 0;
 					
-					alu_undefinedInstruction = 0;
 				end
-			5'b00000:
+			
+			5'b00000: // nop
 				begin
-					alu_regWrite = 0;
+					alu_regWrite = 0;	// cmp
 					flag_regWrite = 0;
-					
-					alu_undefinedInstruction = 0;
 				end
-		
+				
 			default: 
 				begin
 					alu_regWrite = 0;
 					flag_regWrite = 0;
-					
-					alu_undefinedInstruction = 1;
-					IF_flush=1; ID_flush=1; EX_flush=1;
+					undefined_instruction = 1;
+					//memRead = 0;
+					//memWrite = 0;
+					//pcSrc = 0;
+					//IF_flush=1; ID_flush=1; EX_flush=1;
 				end
 		endcase
 	
@@ -71,14 +66,12 @@ module controlCircuit(
 					memRead = 0;
 					memWrite = 1;
 					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
 				end
 			5'b01101: //loadb
 				begin
 					memRead = 1;
 					memWrite = 0;
 					mem_regWrite = 1;
-					mem_undefinedInstruction = 0;
 				end
 				
 			5'b11010: //branch
@@ -86,7 +79,6 @@ module controlCircuit(
 					memRead = 0;
 					memWrite = 0;
 					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
 					isBranch = 1;
 					
 				end
@@ -96,61 +88,56 @@ module controlCircuit(
 					memRead = 0;
 					memWrite = 0;
 					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
 					isJump = 1;
 					
 				end
 			
-			5'b00000: // NoOp / IF Flush
+			
+			5'b00000: // nop
 				begin
 					memRead = 0;
 					memWrite = 0;
 					mem_regWrite = 0;
-					mem_undefinedInstruction = 0;
+					
 				end
-			
+				
 			default:
 				begin
 					memRead = 0;
 					memWrite = 0;
-					mem_regWrite = 0;
-					mem_undefinedInstruction = 1;
-					IF_flush=1; ID_flush=1; EX_flush=1;
+					mem_regWrite = 0; 
+					undefined_instruction = 1;
+					
 				end
 		endcase
 		
-		/* PCSrc controls - Branch, Jump and exceptions*/
-		
-		if(p3_overflow_flag == 1) // Takes precedence since it's a cycle ahead
-		begin
-			pcSrc = 3;
-			IF_flush=1; ID_flush=1; EX_flush=1;
-		end
-		else if( p2_isBranch && p3_flag_n )
-			begin 
-				pcSrc = 1;
-				ID_flush=1;
-				IF_flush=1;
-			end
-		else if( mem_undefinedInstruction || alu_undefinedInstruction )
+		if(p3_flag_v ) // Don't let the ex complete either. Set all signals in
 			begin
 				pcSrc = 3;
-				IF_flush = 1;
+				IF_flush=1; ID_flush=1; EX_flush=1;
 			end
-		else if( isJump )	// Least precedence. Even lower than undefinedInstructions
+		else if(p2_isBranch & p3_flag_n ) //branch
+			begin	
+				pcSrc = 1;
+				IF_flush=1; ID_flush=1;
+			end
+		else if (isJump) //jump
 			begin
 				pcSrc = 2;
 				IF_flush=1;
 			end
-		else
+		else if(undefined_instruction)
 			begin
-				pcSrc = 0;
+				pcSrc = 3;
+				IF_flush=1;
 			end
+		else
+			pcSrc = 0;
 	end
 	
 	
-	
 endmodule
+
 
 
 

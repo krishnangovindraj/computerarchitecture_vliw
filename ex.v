@@ -2,7 +2,7 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 
 		input p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, 
 		input p2_aluOp, p2_aluSrcB, 
-		input p2_isBranch, p2_isJump,
+		// input p2_isBranch, p2_isJump, // Not needed
 		
 		
 		input [2:0] p2_alu_rn, p2_alu_rm, p2_alu_rd, p2_mem_rn, p2_mem_rd,
@@ -17,9 +17,11 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 		input [31:0] f_alu_reg_rn_1, f_alu_reg_rn_2, f_alu_reg_rn_3, 	// forwarding for alu_rn
 		
 		
+		
 		output [2:0] p3_alu_rd, p3_mem_rd,
-		output [7:0] p3_mem_reg_rd, 
-		output [31:0] p3_alu_aluOut, p3_mem_address
+		output [7:0] p3_mem_reg_rd,
+		output [31:0] p3_alu_aluOut, p3_mem_address,
+		output p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v
 );
 	// MEM line
 	wire [31:0] selected_mem_reg_rn;
@@ -41,10 +43,10 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 	mux2to1_32bit mux_alu_rm_imm( selected_alu_reg_rm, p2_alu_sextImm3, p2_aluSrcB, aluIn2 );
 
 	wire [31:0] aluOut;
-	wire flag_z, flag_n, flag_c, flag_v;
+	wire alu_flag_z, alu_flag_n, alu_flag_c, alu_flag_v;
 	alu theALU(
 		aluIn1, aluIn2, p2_aluOp, aluOut, 
-		flag_z, flag_n, flag_c, flag_v
+		alu_flag_z, alu_flag_n, alu_flag_c, alu_flag_v
 	);
 	
 	pipeline_EX_MEM p3( 
@@ -52,10 +54,12 @@ module EXStage(input clk, input reset, input p3_pipeline_regWrite, input EX_flus
 		alu_rd, mem_rd,
 		mem_reg_rd, 
 		aluOut, mem_address,
+		alu_flag_z, alu_flag_n, alu_flag_c, alu_flag_v,
 		
 		p3_alu_rd, p3_mem_rd,
 		p3_mem_reg_rd, 
-		p3_alu_aluOut, p3_mem_address
+		p3_alu_aluOut, p3_mem_address,
+		p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v
 	);	
 	
 	
