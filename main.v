@@ -19,11 +19,12 @@ module mainModule(input clk, input reset);
 	
 	
 	// IF Related
-	wire [15:0] p1_alu_instr, p1_mem_instr; // Leaving p1
+	wire [15:0] p1_aluInstr, p1_memInstr; // Leaving p1
 	wire [31:0] p1_pc_plus4;
-	IFStage(
+	IFStage the_IFStage(
 		clk, reset, p1_pipeline_regWrite, IF_flush, 
-		pcWrite, 	p2_pc_branchTarget, pc_jumpTarget, pcSrc, // From other stages
+		pcWrite, 	p2_pc_branchTarget, pc_jumpTarget, 
+		pcSrc, // From other stages
 		p1_aluInstr, p1_memInstr, p1_pc_plus4
 	);
 	
@@ -44,7 +45,7 @@ module mainModule(input clk, input reset);
 	wire [2:0] p4_alu_rd, p4_mem_rd;
 	
 	// Major data flow
-	wire [31:0] p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, p2_mem_reg_rd;
+	wire [31:0] p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, p2_mem_reg_rd; // Shrinking p2_mem_rd in EX instantiation
 	wire [31:0] p2_alu_imm, p2_memOffset;
 	// wire [31:0] p2_pc_branchTarget, pc_jumpTarget; 			// Declared above near IF stage
 	
@@ -56,10 +57,10 @@ module mainModule(input clk, input reset);
 	
 	// Forwarded data flow
 	wire [31:0] f_mem_reg_rn_1, f_mem_reg_rn_2, f_mem_reg_rn_3;	// forwarding for mem_rn
-	wire [31:0] f_mem_reg_rd_1;									// forwarding for mem_rd
+	wire [7:0] f_mem_reg_rd_1;									// forwarding for mem_rd
 	wire [31:0] f_alu_reg_rm_1, f_alu_reg_rm_2, f_alu_reg_rm_3;	// forwarding for alu_rm
 	wire [31:0] f_alu_reg_rn_1, f_alu_reg_rn_2, f_alu_reg_rn_3; 	// forwarding for alu_rn
-	wire [31:0] f_memStage_mem_reg_rd;	
+	wire [7:0] f_memStage_mem_reg_rd;	
 	
 	
 	//  Flag register related
@@ -71,12 +72,14 @@ module mainModule(input clk, input reset);
 	
 	
 	
-	IDStage(
+	IDStage theIDStage(
 		clk, reset, p2_pipeline_regWrite, p2_pipeline_stall, // ID_Flush is generated here itself, but p2_stall isn't
 		
 		p1_aluInstr, p1_memInstr,
 		p3_flag_v, p3_flag_n, // p2_isBranch, // Already declared in the pipeline output vars				// Look down
-		p4_mem_regWrite, p4_alu_regWrite, p4_alu_aluOut, p4_mem_memOut,
+		p4_mem_regWrite, p4_alu_regWrite,
+		p4_alu_rd, p4_mem_rd,  
+		p4_alu_aluOut, p4_mem_memOut,
 		p4_flag_z, p4_flag_n, p4_flag_c, p4_flag_v,
 		// Our output
 		p2_alu_rm, p2_alu_rn, p2_alu_rd, p2_mem_rn, p2_mem_rd, 
@@ -99,14 +102,15 @@ module mainModule(input clk, input reset);
 	);
 	
 
-	EXStage(clk, reset, p3_pipeline_regWrite, EX_flush,
+	EXStage theEXStage(clk, reset, p3_pipeline_regWrite, EX_flush,
 
 		p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, p2_flag_regWrite,
 		p2_aluOp, p2_aluSrcB, 
 		// p2_isBranch, p2_isJump, // Not needed
 		
 		p2_alu_rn, p2_alu_rm, p2_alu_rd, p2_mem_rn, p2_mem_rd,
-		p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, p2_mem_reg_rd, 
+		p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, 
+		p2_mem_reg_rd[7:0],  									// Shrinking it here
 		p2_alu_imm, p2_memOffset, 
 		
 		f_mem_reg_rd_sel, 										// Forwarding mux selectors
@@ -126,18 +130,20 @@ module mainModule(input clk, input reset);
 
 	
 	// MEM stage
-	MEMStage( 
-		clk, reset,
+	MEMStage theMEMStage( 
+		clk, reset, 1'b1,
 		
+		p3_alu_regWrite, p3_mem_regWrite,
 		p3_alu_rd, p3_mem_rd,
 		p3_mem_reg_rd, 
 		p3_alu_aluOut, p3_mem_address,
 		
 		f_memStage_mem_rd_sel,
-		f_memStage_mem_reg_rd,
+		f_memStage_mem_reg_rd[7:0],
 		
 		p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v,
 		
+		p4_alu_regWrite, p4_mem_regWrite,
 		p4_alu_rd, p4_mem_rd,
 		p4_alu_aluOut,
 		p4_mem_memOut,
@@ -147,7 +153,7 @@ module mainModule(input clk, input reset);
 
 
 	// Forwarding unit
-	forwarding_unit(
+	forwarding_unit the_forwarding_unit(
 		p3_alu_regWrite, p4_alu_regWrite, p4_mem_regWrite, p2_alu_regWrite,
 		// input [4:0] p1_aluOpcode,input [4:0] p1_memOpcode,  input [4:0] p2_aluOpcode,input [4:0] p2_memOpcode, // Not needed
 		p4_mem_rd, p4_alu_rd, 
@@ -159,7 +165,7 @@ module mainModule(input clk, input reset);
 	); 	
 	
 	// Hazard detection;	
-	 hazard_detection(
+	 hazard_detection the_hazard_detection(
 		p3_mem_regWrite, p3_mem_rd,
 		p2_alu_rm, p2_alu_rn, p2_mem_rn,
 		pcWrite, p1_pipeline_regWrite, p2_pipeline_stall

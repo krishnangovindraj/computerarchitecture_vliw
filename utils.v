@@ -1,3 +1,27 @@
+module mux8to1_8bit( input [7:0] in0,in1,in2,in3,in4,in5,in6,in7, input [2:0] Sel, output reg [7:0] outBus );
+	always@(in0 or in1 or in2 or in3 or in4 or in5 or in6 or in7 or Sel)
+	case (Sel)
+			3'b000: outBus=in0;
+			3'b001: outBus=in1;
+			3'b010: outBus=in2;
+			3'b011: outBus=in3;
+			3'b100: outBus=in4;
+			3'b101: outBus=in5;
+			3'b110: outBus=in6;
+			3'b111: outBus=in7;
+	endcase
+endmodule
+
+
+module mux2to1_8bit( input [7:0] in0,in1, input Sel, output reg [7:0] outBus );
+	always@(in0 or in1 or Sel)
+	case (Sel)
+			1'b0: outBus=in0;
+			1'b1: outBus=in1;
+	endcase
+endmodule
+
+
 module mux8to1_32bit( input [31:0] in0,in1,in2,in3,in4,in5,in6,in7, input [2:0] Sel, output reg [31:0] outBus );
 	always@(in0 or in1 or in2 or in3 or in4 or in5 or in6 or in7 or Sel)
 	case (Sel)
@@ -12,7 +36,7 @@ module mux8to1_32bit( input [31:0] in0,in1,in2,in3,in4,in5,in6,in7, input [2:0] 
 	endcase
 endmodule
 
-module mux4to1_32bit( input [31:0] in0,in1,in2,in3, input [2:0] Sel, output reg [31:0] outBus );
+module mux4to1_32bit( input [31:0] in0,in1,in2,in3, input [1:0] Sel, output reg [31:0] outBus );
 	always@(in0 or in1 or in2 or in3 or Sel)
 	case (Sel)
 			2'b00: outBus=in0;

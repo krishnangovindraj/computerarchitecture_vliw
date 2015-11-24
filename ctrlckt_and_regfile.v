@@ -171,8 +171,8 @@ endmodule
 
 module registerFile(
 	input clk, input reset, 
-	input mem_regWrite, input [2:0] mem_rn, mem_rd, input [31:0] mem_writeData,
-	input alu_regWrite, input [2:0] alu_rm, alu_rn, alu_rd, input [31:0] alu_writeData,
+	input p4_mem_regWrite, input [2:0] mem_rn, mem_rd, p4_mem_rd, input [31:0] mem_writeData,
+	input p4_alu_regWrite, input [2:0] alu_rm, alu_rn, alu_rd, p4_alu_rd, input [31:0] alu_writeData,
 	
 	output [31:0] mem_reg_rn, mem_reg_rd, 
 	output [31:0] alu_reg_rm, alu_reg_rn
@@ -182,10 +182,10 @@ module registerFile(
 	
 	
 	wire [7:0] alu_decOut, mem_decOut;
-	decoder3to8 alu_decoder(alu_rd, alu_decOut);
-	decoder3to8 mem_decoder(mem_rd, mem_decOut);
+	decoder3to8 alu_decoder(p4_alu_rd, alu_decOut);
+	decoder3to8 mem_decoder(p4_mem_rd, mem_decOut);
 	
-	registerSet rSet0( clk, reset, alu_regWrite,mem_regWrite, alu_decOut, mem_decOut, alu_writeData, mem_writeData, outR0,outR1,outR2,outR3,outR4,outR5,outR6,outR7 ); 
+	registerSet rSet0( clk, reset, p4_alu_regWrite, p4_mem_regWrite, alu_decOut, mem_decOut, alu_writeData, mem_writeData, outR0,outR1,outR2,outR3,outR4,outR5,outR6,outR7 ); 
 	// regWrite can be 1'b1 since the decoder does the work
 	
 	mux8to1_32bit mux_mrn( outR0,outR1,outR2,outR3,outR4,outR5,outR6,outR7, mem_rn, mem_reg_rn );

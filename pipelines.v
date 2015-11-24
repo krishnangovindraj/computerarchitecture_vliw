@@ -1,10 +1,10 @@
 module pipleline_IF_ID( 
 		input clk, input reset, input regWrite, input IF_flush,
-		input [31:0] instr2Word, input [31:0] pc_plus4, 
+		input [15:0] aluInstr, memInstr, input [31:0] pc_plus4, 
 		output [15:0] p1_aluInstr, output [15:0] p1_memInstr, output [31:0] p1_pc_plus4
 	);
-	register16bit reg_aluInstr(clk, reset | IF_flush, regWrite, 1'b1, instr2Word[15:0], p1_aluInstr);
-	register16bit reg_memInstr(clk, reset | IF_flush, regWrite, 1'b1, instr2Word[31:16], p1_memInstr);
+	register16bit reg_aluInstr(clk, reset | IF_flush, regWrite, 1'b1, aluInstr, p1_aluInstr);
+	register16bit reg_memInstr(clk, reset | IF_flush, regWrite, 1'b1, memInstr, p1_memInstr);
 	register32bit reg_pc_plus4(clk, reset | IF_flush, regWrite, 1'b1, pc_plus4 , p1_pc_plus4);
 endmodule
 
@@ -14,19 +14,22 @@ module pipeline_ID_EX(
 		output [2:0] p2_alu_rn, p2_alu_rm, p2_alu_rd, p2_mem_rn, p2_mem_rd,
 		
 		input [31:0] alu_reg_rm, alu_reg_rn, mem_reg_rn, mem_reg_rd, 
-		output [31:0] p2_alu_reg_rm, p2_alu_reg_rns, p2_mem_reg_rn, p2_mem_reg_rd, 
+		output [31:0] p2_alu_reg_rm, p2_alu_reg_rn, p2_mem_reg_rn, p2_mem_reg_rd, 
 		
 		input [31:0] alu_sextImm3, mem_sextImm5,
 		output [31:0] p2_alu_sextImm3, p2_mem_sextImm5,
 		
+		input [31:0] mem_shiftedSext8_branchOffset,	
+		output [31:0] p2_mem_shiftedSext8_branchOffset,
+		
 		// signals in
 		input memRead, memWrite, alu_regWrite, mem_regWrite, flag_regWrite,
 		input aluOp, aluSrcB,
-		input isBranch, isJump, pcSrc,
+		input isBranch, isJump,
 		// signals out
 		output p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, p2_flag_regWrite,
 		output p2_aluOp, p2_aluSrcB,
-		output p2_isBranch, p2_isJump, p2_pcSrc
+		output p2_isBranch, p2_isJump
 	);
 	
 	wire signal_reset = reset | ID_flush | p2_pipeline_stall;
@@ -49,7 +52,7 @@ module pipeline_ID_EX(
 	
 	register32bit reg_alu_sextImm3( clk, reset, regWrite, 1'b1, alu_sextImm3, p2_alu_sextImm3 );
 	register32bit reg_mem_sextImm5( clk, reset, regWrite, 1'b1, mem_sextImm5, p2_mem_sextImm5 );
-	register32bit reg_mem_sextImm8( clk, reset, regWrite, 1'b1, mem_sextImm8, p2_mem_sextImm8 );
+	register32bit reg_mem_sextImm8( clk, reset, regWrite, 1'b1, mem_shiftedSext8_branchOffset, p2_mem_shiftedSext8_branchOffset ); 
 	
 	// Signals // ID_flush resets only the signals.
 	register1bit  reg_memRead( clk, signal_reset, regWrite, 1'b1, memRead, p2_memRead);
@@ -78,12 +81,14 @@ module pipeline_EX_MEM(
 	
 	input p2_memRead, p2_memWrite, p2_alu_regWrite, p2_mem_regWrite, p2_flag_regWrite,
 	input [2:0] alu_rd, mem_rd,
-	input [31:0] aluOut, mem_reg_rd, mem_address,
+	input [7:0] mem_reg_rd,
+	input [31:0] alu_aluOut,  mem_address,
 	input alu_flag_z, alu_flag_n, alu_flag_c, alu_flag_v,
 	
 	output p3_memRead, p3_memWrite, p3_alu_regWrite, p3_mem_regWrite,
 	output [2:0] p3_alu_rd, p3_mem_rd,
-	output [31:0] p3_alu_aluOut, p3_mem_reg_rd, p3_mem_address,
+	output [7:0] p3_mem_reg_rd, 
+	output [31:0] p3_alu_aluOut, p3_mem_address,
 	output p3_flag_z, p3_flag_n, p3_flag_c, p3_flag_v
 );
 	
@@ -99,7 +104,7 @@ module pipeline_EX_MEM(
 	
 	
 	register32bit reg_alu_aluOut( clk, reset | EX_flush, regWrite, 1'b1, alu_aluOut, p3_alu_aluOut );
-	register32bit reg_mem_reg_rd( clk, reset | EX_flush, regWrite, 1'b1, mem_reg_rd, p3_mem_reg_rd );
+	register8bit reg_mem_reg_rd( clk, reset | EX_flush, regWrite, 1'b1, mem_reg_rd, p3_mem_reg_rd );
 	register32bit reg_mem_address( clk, reset | EX_flush, regWrite, 1'b1, mem_address, p3_mem_address );
 	
 	register1bit reg_flag_z( clk, reset, regWrite & p2_flag_regWrite & EX_Flush , 1'b1, alu_flag_z, p3_flag_z); // All 3 &

@@ -5,7 +5,8 @@ module IFStage(
 		// From other stages
 		input pcWrite, 	input [31:0] pc_branchTarget, pc_jumpTarget, 
 		input [1:0] pcSrc, // OR the two
-		output [15:0] p1_aluInstr, p1_memInstr, p1_pc_plus4
+		output [15:0] p1_aluInstr, p1_memInstr, 
+		output [31:0] p1_pc_plus4
 	);
 	
 	//Moved to in
@@ -21,12 +22,13 @@ module IFStage(
 	adder32bit adder_pc( pc_out, 32'd4 , pc_plus4 );
 	
 	
-	mux4to1_32bit mux_pc_writeData( pc_plus4, pc_branchTarget,  pc_jumpTarget, EXCEPTION_HANDLER_ADDRESS, pcSrc, pc_writeData );
+	mux4to1_32bit mux_pc_writeData( pc_plus4, pc_branchTarget,  pc_jumpTarget, 32'b00000000_11111111_00000000_11111111, pcSrc, pc_writeData );
 	
 	
 	// Instruction memory
 	wire [31:0] instr2Word;
 	wire instrMem_hit;
+
 	instructionMem instructionMemory(clk, reset, pc_out, 32'b0, instrMem_hit, instr2Word);
 	
 	// P1
